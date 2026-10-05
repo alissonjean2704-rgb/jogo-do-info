@@ -38,3 +38,35 @@ export const questions: Question[] = [
 { id:29,category:"Validação",difficulty:"Estrategista",title:"Você quer validar cinco produtos com pouco caixa.",context:"Cada produto precisa de verba e você não terá dados suficientes se fragmentar demais.",options:["Testar os cinco produtos juntos","Priorizar a melhor hipótese e testar","Gastar tudo no produto mais caro","Escolher um produto por sorte"],correct:1,explanation:"Pouco capital exige priorização para gerar aprendizado com profundidade.",keyNumber:"Prioridade",nextStep:"Ordene hipóteses por potencial, custo de teste e evidência disponível."},
 { id:30,category:"Escala",difficulty:"Estrategista",title:"Você quer escalar porque está ansioso.",context:"Ainda não há evidência suficiente, mas a vontade de crescer está pressionando a decisão.",options:["Escalar para aliviar a ansiedade","Esperar evidência e proteger o caixa","Aumentar a verba em cinco vezes","Mudar a oferta sem novos dados"],correct:1,explanation:"Escala é decisão econômica, não emocional.",keyNumber:"Evidência",nextStep:"Volte aos critérios objetivos de validação antes de aumentar risco."},
 ];
+
+const scenarioData = {
+  produtos:["curso de tráfego","mentoria de vendas","ebook de finanças","comunidade paga","template de produtividade","curso de inglês","workshop de anúncios","produto de carreira"],
+  canais:["Meta Ads","Google Ads","TikTok Ads","orgânico","afiliados","remarketing"],
+  audiences:["público frio","remarketing","lista de leads","visitantes da página","compradores anteriores","lookalike"],
+  prices:[47,97,147,197,297,497], ctrs:[0.7,1.1,1.6,2.1,2.8,3.4], cpas:[24,39,52,68,91,124],
+  rois:[0.8,1.2,1.7,2.1,2.8,3.6,4.4], margins:[18,27,35,48,62], volumes:[800,1500,3000,6500,12000]
+};
+function pick<T>(a:T[],n:number){return a[Math.abs(n)%a.length]}
+function money(n:number){return `R$ ${n}`}
+function generatedQuestion(seed:number,difficulty:Difficulty):Question{
+ const p=pick(scenarioData.produtos,seed),ch=pick(scenarioData.canais,seed+2),aud=pick(scenarioData.audiences,seed+4);
+ const price=pick(scenarioData.prices,seed+6),ctr=pick(scenarioData.ctrs,seed+8),cpa=pick(scenarioData.cpas,seed+10),roi=pick(scenarioData.rois,seed+12),margin=pick(scenarioData.margins,seed+14),vol=pick(scenarioData.volumes,seed+16);
+ const level=difficulty==="Treino"?0:difficulty==="Operador"?1:2;
+ const cases=[
+  {cat:"Diagnóstico" as Category,title:`O CPA do ${p} subiu para ${money(cpa)}`,context:`No ${ch}, o CTR está em ${ctr}%, mas o custo por compra piorou. A oferta e o preço de ${money(price)} não mudaram.`,good:"Comparar o funil e localizar onde a conversão caiu",bad:["Escalar porque o CTR ainda parece bom","Trocar o produto antes de investigar","Cortar todos os anúncios sem comparar"],why:"Uma métrica final pior exige localizar a etapa responsável antes de mexer em tudo.",next:"Compare CTR, CPC, conversão da página e checkout contra o período anterior.",key:"CPA"},
+  {cat:"Criativo" as Category,title:`O CTR caiu no ${ch}`,context:`O anúncio vinha performando bem, mas depois de ${vol.toLocaleString("pt-BR")} impressões o CTR caiu de ${ctr+0.6}% para ${ctr}%.`,good:"Renovar o ângulo e manter a oferta em teste",bad:["Aumentar o orçamento para recuperar volume","Trocar preço, página e anúncio juntos","Concluir que o produto deixou de vender"],why:"Queda de CTR com volume acumulado pode indicar fadiga ou perda de relevância.",next:"Crie novos hooks com hipóteses diferentes e compare o CTR.",key:"CTR"},
+  {cat:"Funil" as Category,title:"O tráfego chega, mas a página vaza",context:`${vol.toLocaleString("pt-BR")} pessoas chegaram à página do ${p}, porém poucas avançam. O anúncio mantém CTR de ${ctr}%.`,good:"Investigar promessa, prova e clareza da página",bad:["Comprar mais tráfego para compensar","Trocar o meio de pagamento primeiro","Aumentar o preço para filtrar o público"],why:"Se o problema aparece depois do clique, comprar mais cliques amplia o vazamento.",next:"Compare a promessa do anúncio com a primeira dobra e a taxa de avanço.",key:"CVR"},
+  {cat:"Caixa" as Category,title:"A campanha vende, mas o caixa aperta",context:`O ${p} tem preço de ${money(price)}, ROI de ${roi}x e margem operacional de ${margin}%. Mesmo assim, o caixa disponível caiu.`,good:"Separar lucro, recebíveis e caixa disponível",bad:["Escalar para aumentar o faturamento","Usar toda a receita como verba de anúncio","Ignorar caixa enquanto o ROI estiver positivo"],why:"Resultado econômico e dinheiro disponível são coisas diferentes.",next:"Mapeie recebimentos, custos, mídia e compromissos antes de escalar.",key:"Caixa"},
+  {cat:"Oferta" as Category,title:"O público entende o produto, mas não o motivo da compra",context:`O ${p} recebe visitas de ${aud}, porém a conversão está abaixo do esperado mesmo com CTR de ${ctr}%.`,good:"Reforçar transformação, mecanismo e prova",bad:["Adicionar mais elementos no design","Aumentar a verba de aquisição","Criar dez bônus sem testar a promessa"],why:"Mais tráfego não corrige uma proposta que não cria valor percebido.",next:"Reescreva a promessa e teste se ela responde por que comprar agora.",key:"Oferta"},
+  {cat:"Validação" as Category,title:"Um resultado forte apareceu cedo demais",context:`O ${p} teve ROI de ${roi}x após pouco volume. Você ainda não sabe se o resultado se repete em ${aud}.`,good:"Tratar como sinal e buscar repetição",bad:["Aumentar a verba imediatamente","Declarar a oferta validada","Mudar tudo para proteger o resultado"],why:"Resultado inicial pode ser ruído; repetição aumenta a confiança.",next:"Defina uma amostra mínima e repita a hipótese antes de escalar.",key:"Evidência"},
+  {cat:"Escala" as Category,title:`Você quer escalar o ${ch}`,context:`A campanha do ${p} está em ROI de ${roi}x, com CPA de ${money(cpa)} e margem de ${margin}%. O volume está aumentando.`,good:"Aumentar gradualmente e monitorar a economia",bad:["Multiplicar a verba por dez","Escalar sem acompanhar CPA","Trocar a oferta no mesmo dia"],why:"Escala muda leilão, volume e eficiência; aumentos graduais preservam leitura.",next:"Suba o orçamento em etapas e defina limites de CPA e margem.",key:"Escala"}
+ ];
+ const base=cases[(seed+level)%cases.length],options=[base.good,...base.bad],shift=Math.abs(seed)%4;
+ const rotated=options.map((_,i)=>options[(i+shift)%4]);
+ return {id:100000+seed,category:base.cat,difficulty,title:base.title,context:base.context,options:rotated,correct:rotated.indexOf(base.good),explanation:base.why,keyNumber:base.key,nextStep:base.next};
+}
+export function generateQuestions(difficulty:Difficulty,count=10){
+ const out:Question[]=[]; const used=new Set<number>();
+ while(out.length<count){const seed=Math.floor(Math.random()*900000000)+out.length*7919;if(used.has(seed))continue;used.add(seed);out.push(generatedQuestion(seed,difficulty))}
+ return out;
+}
