@@ -1,24 +1,27 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
-export const Route = createFileRoute("/")({
-  component: Index,
-});
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
+import {useEffect,useState,type ReactNode} from "react";
+import {createFileRoute} from "@tanstack/react-router";
+import {ArrowRight,BarChart3,Brain,Check,Flame,RotateCcw,Target,Trophy,Wallet,X,Zap} from "lucide-react";
+import {questions,categories,type Category,type Difficulty} from "../game/questions";
+export const Route=createFileRoute("/")({component:Index});
+type P={xp:number;answered:number;correct:number;streak:number;best:number;cats:Record<string,number>};
+const blank:P={xp:0,answered:0,correct:0,streak:0,best:0,cats:{}};
+const rank=(x:number)=>x>=1800?"Aristocrata":x>=1000?"Estrategista":x>=450?"Operador":"Aprendiz";
+const shuffle=<T,>(a:T[])=>[...a].sort(()=>Math.random()-.5);
+function Index(){
+ const[p,setP]=useState<P>(blank),[screen,setScreen]=useState<"home"|"play"|"sim">("home"),[qs,setQs]=useState(questions.slice(0,10)),[at,setAt]=useState(0),[pick,setPick]=useState<number|null>(null);
+ const[sim,setSim]=useState({day:1,cash:600,spend:0,sales:0,revenue:0,log:["Você começa com R$600. Proteja o caixa."]});
+ useEffect(()=>{try{setP({...blank,...JSON.parse(localStorage.getItem("jdi-progress")||"{}")})}catch{}},[]);
+ useEffect(()=>{localStorage.setItem("jdi-progress",JSON.stringify(p))},[p]);
+ const start=(d:Difficulty|"Todas")=>{const pool=d==="Todas"?questions:questions.filter(q=>q.difficulty===d);setQs(shuffle(pool).slice(0,10));setAt(0);setPick(null);setScreen("play")};
+ const q=qs[at];
+ const answer=(i:number)=>{if(pick!==null)return;setPick(i);const ok=i===q.correct;setP(s=>({...s,xp:s.xp+(ok?100:25),answered:s.answered+1,correct:s.correct+(ok?1:0),streak:ok?s.streak+1:0,best:ok?Math.max(s.best,s.streak+1):s.best,cats:{...s.cats,[q.category]:(s.cats[q.category]||0)+(ok?1:0)}}))};
+ const reset=()=>{if(confirm("Apagar todo o progresso?")){setP(blank);localStorage.removeItem("jdi-progress")}};
+ if(screen==="play")return <Shell p={p} home={()=>setScreen("home")}><main className="play"><div className="playbar"><button onClick={()=>setScreen("home")}>← sair</button><span>{at+1} / {qs.length}</span><span>{q.category} · {q.difficulty}</span></div><article className="question"><label>{q.category.toUpperCase()}</label><h1>{q.title}</h1><p className="context">{q.context}</p><div className="options">{q.options.map((o,i)=>{const st=pick===null?"":i===q.correct?"ok":i===pick?"bad":"";return <button className={"option "+st} disabled={pick!==null} onClick={()=>answer(i)} key={o}><b>{String.fromCharCode(65+i)}</b>{o}{st==="ok"?<Check/>:st==="bad"?<X/>:null}</button>})}</div>{pick!==null&&<div className={"feedback "+(pick===q.correct?"good":"wrong")}><div><b>{pick===q.correct?"Boa decisão.":"Decisão errada."}</b><p>{q.explanation}</p><small><strong>{q.keyNumber}</strong> · {q.nextStep}</small></div><button onClick={()=>{if(at===qs.length-1)setScreen("home");else{setAt(x=>x+1);setPick(null)}}}>{at===qs.length-1?"Finalizar":"Próxima"} <ArrowRight size={16}/></button></div>}</article></main></Shell>;
+ if(screen==="sim")return <Shell p={p} home={()=>setScreen("home")}><Simulation sim={sim} setSim={setSim}/></Shell>;
+ return <Shell p={p} home={()=>setScreen("home")}><main className="home"><section className="hero"><label>SIMULADOR DE OPERAÇÃO</label><h1>Aprenda a pensar<br/><em>como operador.</em></h1><p>Decida sob pressão, proteja o caixa, encontre gargalos e prove uma oferta antes de escalar.</p><div className="actions"><button className="primary" onClick={()=>start("Todas")}>Começar treino <ArrowRight size={17}/></button><button className="secondary" onClick={()=>setScreen("sim")}><Wallet size={17}/> Simular R$600</button></div></section><section className="metrics"><Metric icon={<Zap/>} label="XP" value={p.xp.toLocaleString("pt-BR")} sub={rank(p.xp)}/><Metric icon={<Target/>} label="Precisão" value={p.answered?Math.round(p.correct/p.answered*100)+"%":"—"} sub={p.answered+" decisões"}/><Metric icon={<Flame/>} label="Sequência" value={String(p.streak)} sub={"recorde "+p.best}/><Metric icon={<Trophy/>} label="Nível" value={rank(p.xp)} sub="progressão"/></section><div className="section"><div><label>MODOS</label><h2>Escolha seu campo.</h2></div></div><section className="modes"><Mode icon={<Brain/>}tag="APRENDER"title="Modo Treino"desc="10 decisões com feedback imediato." on={()=>start("Todas")}/><Mode icon={<Target/>}tag="DECIDIR"title="Modo Operador"desc="Casos mais próximos de uma operação real." on={()=>start("Operador")}/><Mode icon={<BarChart3/>}tag="PENSAR"title="Modo Estrategista"desc="Diagnóstico, validação e escala." on={()=>start("Estrategista")}/><Mode icon={<Wallet/>}tag="SIMULAR"title="Modo R$600"desc="Sobreviva 7 dias sem quebrar o caixa." on={()=>setScreen("sim")}/></section><div className="section"><label>COMPETÊNCIAS</label><h2>Seu mapa de operador.</h2></div><section className="skills">{categories.map(c=><Skill key={c} name={c} value={p.cats[c]||0}/>)}</section><div className="rules"><span>REGRA DO JOGO</span><b>Oferta primeiro.</b><b>Caixa antes de tráfego.</b><b>Diagnóstico antes de mudança.</b><b>Validação antes de escala.</b></div><button className="reset" onClick={reset}><RotateCcw size={14}/> Resetar progresso</button></main></Shell>
 }
+function Shell({children,p,home}:{children:ReactNode;p:P;home:()=>void}){return <div className="app"><header><button className="brand" onClick={home}><strong>JI</strong><span>Jogo do Info<small>OPERATOR SIM</small></span></button><div className="rank">{rank(p.xp)} <b>{p.xp} XP</b></div></header>{children}<footer>JOGO DO INFO · aprenda com decisões, não com teoria.</footer></div>}
+function Metric({icon,label,value,sub}:{icon:ReactNode;label:string;value:string;sub:string}){return <div className="metric"><i>{icon}</i><small>{label}</small><b>{value}</b><span>{sub}</span></div>}
+function Mode({icon,tag,title,desc,on}:{icon:ReactNode;tag:string;title:string;desc:string;on:()=>void}){return <button className="mode" onClick={on}><i>{icon}</i><label>{tag}</label><h3>{title}</h3><p>{desc}</p><ArrowRight/></button>}
+function Skill({name,value}:{name:Category;value:number}){return <div className="skill"><div><b>{name}</b><span>{value} acertos</span></div><div className="skillbar"><i style={{width:Math.min(100,value*20)+"%"}}/></div></div>}
+function Simulation({sim,setSim}:{sim:any;setSim:any}){const acts=[["Teste concentrado",50,.42],["Mais volume",100,.3],["Escalar",150,.5],["Proteger caixa",0,0]];if(sim.day>7)return <main className="play"><article className="result"><label>FIM DA SIMULAÇÃO</label><h1>7 dias. <em>O caixa fala.</em></h1><div className="metrics"><Metric icon={<Wallet/>}label="Caixa final"value={"R$"+sim.cash}sub="saldo"/><Metric icon={<BarChart3/>}label="Receita"value={"R$"+sim.revenue}sub="vendas"/><Metric icon={<Target/>}label="Investido"value={"R$"+sim.spend}sub="tráfego"/><Metric icon={<Flame/>}label="Vendas"value={String(sim.sales)}sub="total"/></div><button className="primary" onClick={()=>setSim({day:1,cash:600,spend:0,sales:0,revenue:0,log:["Você começa com R$600. Proteja o caixa."]})}>Jogar novamente <RotateCcw size={16}/></button></article></main>;return <main className="sim"><div className="playbar"><button onClick={()=>setSim((s:any)=>({...s,day:8}))}>← sair</button><span>DIA {sim.day} / 7</span><span>SIMULAÇÃO R$600</span></div><div className="simhead"><div><label>OPERADOR</label><h1>Você tem <em>R$600.</em></h1><p>Compre aprendizado sem transformar ansiedade em prejuízo.</p></div><strong>R$ {sim.cash}<small>caixa disponível</small></strong></div><div className="simgrid"><div>{acts.map(([name,cost,prob])=><button className="act" key={String(name)} disabled={Number(cost)>sim.cash} onClick={()=>{const sale=Math.random()<Number(prob);const rev=sale?150:0;setSim((s:any)=>({...s,day:s.day+1,cash:s.cash-Number(cost)+rev,spend:s.spend+Number(cost),sales:s.sales+(sale?1:0),revenue:s.revenue+rev,log:[`Dia ${s.day}: ${name}. ${sale?"Saiu uma venda de R$150.":"Sem venda."}`,...s.log].slice(0,5)}))}}><span><b>{name}</b><small>{Number(cost)?"Gastar R$"+cost:"Não gastar"}</small></span><ArrowRight/></button>)}</div><aside><b>LOG DA OPERAÇÃO</b>{sim.log.map((x:string,i:number)=><p key={i}>{x}</p>)}</aside></div></main>}
