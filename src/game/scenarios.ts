@@ -19,7 +19,7 @@ export type Scenario = {
 const v=(n:number)=>n;
 const metric=(ticket:number,spend:number,impressions:number,clicks:number,checkout:number,pix:number,paid:number,days:number,creatives:number):ScenarioMetrics=>{
   const ctr=impressions?clicks/impressions:0,cpc=clicks?spend/clicks:0,sales=paid,revenue=sales*ticket,cpa=sales?spend/sales:0,roi=spend?revenue/spend:0;
-  return {cash:0,ticket,spend,impressions,clicks,ctr,cpc,checkout,pix,paid,sales,revenue,cpa,roi,days,creatives};
+  return {cash:Math.max(300,Math.min(5000,Math.round(spend*6))),ticket,spend,impressions,clicks,ctr,cpc,checkout,pix,paid,sales,revenue,cpa,roi,days,creatives};
 };
 
 type Template={
@@ -69,7 +69,7 @@ export const scenarios:Scenario[] = templates.flatMap((t,ti)=>Array.from({length
  return {
   id:`lvl-${t.level}-${String(ti+1).padStart(2,"0")}-${i+1}`,level:t.level,difficulty:t.difficulty,category:t.category,
   title:t.title,context:t.context,product:t.product,offer:t.offer.replace("{t}",[19.9,37.9,67,97,147][i].toString().replace(".",",")),
-  metrics:m,available:["produto","oferta","ticket","gasto","impressões","cliques","CTR","CPC","checkout","Pix","Pix pago","vendas","CPA","ROI","dias de campanha","quantidade de criativos"],
+  metrics:m,available:["caixa","produto","oferta","ticket","gasto","impressões","cliques","CTR","CPC","checkout","Pix","Pix pago","vendas","CPA","ROI","dias de campanha","quantidade de criativos"],
   hidden:i%2===0?["qualidade percebida da oferta","histórico de ontem"]:["motivo do abandono","variação do criativo anterior"],
   decisions:decisionsFor(t,i),principle:t.principle,xp:t.level>=17?150:90,
   caseNote:ti%3===0?"Caso inspirado em padrões de operação real; números adaptados para treinamento.":undefined,tags:t.tags
