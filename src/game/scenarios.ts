@@ -51,6 +51,8 @@ const templates:Template[]=[
 
 {category:"Escala",level:6,difficulty:"NORMAL",title:"Teste não é aposta",context:"Você está montando a primeira campanha de uma oferta ainda não validada. O orçamento precisa gerar evidência suficiente sem comprometer a próxima rodada.",product:"Workshop de tráfego",offer:"R$ {t}",build:i=>metric([37.9,67,97,147,197][i],[28,42,58,78,105][i],[6500,8500,11000,14000,18000][i],[105,132,165,198,230][i],[8,10,12,14,17][i],[5,7,8,10,12][i],[1,1,1,2,2][i],1,3),principle:"Teste controlado compra evidência; escala compra volume.",correct:"Definir hipótese, limite de perda e critério de leitura antes de aumentar verba.",alternatives:["Aumentar orçamento porque o produto parece bom.","Duplicar campanhas para acelerar o resultado.","Trocar oferta, público e criativo ao mesmo tempo."],explanations:["Você está tratando convicção sobre o produto como validação de aquisição.","Duplicar campanhas aumenta gasto sem aumentar necessariamente aprendizado.","Mudar várias variáveis impede saber o que causou o resultado.","Um teste precisa de hipótese, limite e critério antes de receber mais capital."],tags:["primeiro teste","1-1-1","validação"]},
 
+];
+
 const decisionsFor=(t:Template,i:number):Decision[]=>{
  const tkt=[19.9,37.9,67,97,147][i];
  const good=t.correct.replaceAll("{t}",tkt.toString().replace(".",","));
